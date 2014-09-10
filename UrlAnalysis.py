@@ -24,7 +24,6 @@ df = df[df.url.notnull()] # discard rows without url
 # df = df[df.method == "GET"]
 df.date = pd.to_datetime(df.date)
 df.index = df.date
-df['host'] = df.url.apply(get_host)
 print df.index.size
 df.head()
 
@@ -37,35 +36,27 @@ def get_host(url):
     return url
 
 classes = {
-    "news"   : ["zeit.de", "welt.de"],
-    "social" : ["facebook.com", "twitter.com"],
-    "status" : ["dropbox.com", "ghostery"],
-    "learn"  : ["wikipedia.org", "stackoverflow", "wikibooks", "wikimedia"],
-    "work"   : ["github.com", "calendar.google.com"],
-    "search" : ["google"]
-}
-
-numeric_classes = {
-    "news"   : 10,
-    "social" : 15,
-    "status" : 0,
-    "unknown": -1,
-    "search" : -5,
-    "work"   : -8,
-    "learn"  : -10,
+    "news"   : { 'patterns': ["zeit.de", "welt.de"],          'value' : 10 },
+    "social" : { 'patterns': ["facebook.com", "twitter.com"], 'value' : 15 },
+    "status" : { 'patterns': ["dropbox.com", "ghostery"],     'value' : 0 },
+    "learn"  : { 'patterns': ["wikipedia.org", "stackoverflow", "wikibooks", "wikimedia"], 'value' : -5 },
+    "work"   : { 'patterns': ["github.com", "calendar.google.com"], 'value' : -10 },
+    "search" : { 'patterns': ["google"], 'value' : 1 },
+    "unknown": { 'patterns': [], 'value' : 0 },
 }
 
 def classify(host):
-    for host_class, parts in classes.items():
-        if any([ (host_part in host) for host_part in parts ]): 
+    for host_class, ob in classes.items():
+        if any([ (pattern in host) for pattern in ob['patterns'] ]): 
             return host_class
     return "unknown"
 
 def n_classify(host):
-    return numeric_classes[classify(host)]
+    return classes[classify(host)]['value']
 
 # <codecell>
 
+df['host'] = df.url.apply(get_host)
 df['host_type'] = df.host.apply(n_classify)
 # plt.plot(df.host_type,df.date,'o')
 
@@ -73,7 +64,7 @@ df['host_type'] = df.host.apply(n_classify)
 
 from datetime import datetime
 plt.figure(figsize=(20,5))
-gf = df[df.date > datetime(2014,9,7,0,0,0)]
+gf = df# [df.date > datetime(2014,9,7,0,0,0)]
 plt.plot(gf.date,gf.host_type,'o')
 
 # <codecell>
